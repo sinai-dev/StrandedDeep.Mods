@@ -43,7 +43,7 @@ namespace ModPack
                         var toggle = Config.Bind(
                             new ConfigDefinition(TOGGLES_CATEGORY, plugin.Name),
                             false,
-                            new ConfigDescription($"Completely enable or disable {plugin.Name}."));
+                            new ConfigDescription($"Enable '{plugin.Name}'"));
 
                         toggle.SettingChanged += plugin.Toggle_SettingChanged;
                         plugin.ToggleSetting = toggle;
