@@ -405,9 +405,11 @@
     <Compile Include="Cheats\Cheats.cs" />
     <Compile Include="ContainerTweaks\ContainerTweaks.cs" />
     <Compile Include="CustomStackSizes\CustomStackSizes.cs" />
+    <Compile Include="InGameMap\MapType.cs" />
     <Compile Include="InGameMap\MarkerBase.cs" />
     <Compile Include="InGameMap\CachedMapZone.cs" />
     <Compile Include="InGameMap\CachedPlayer.cs" />
+    <Compile Include="InGameMap\MarkerType.cs" />
     <Compile Include="InGameMap\Pool.cs" />
     <Compile Include="InGameMap\InGameMap.cs" />
     <Compile Include="CustomTimeSpeed\CustomTimeSpeed.cs" />

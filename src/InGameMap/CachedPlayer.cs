@@ -33,7 +33,7 @@ namespace ModPack.InGameMap
             UiRoot = new GameObject("CachedPlayer");
             UiRoot.transform.SetParent(InGameMap.Instance.canvasRoot.transform);
 
-            image = InstantiateIcon("player");
+            image = InstantiateIcon(MarkerType.Player);
             image.transform.SetParent(UiRoot.transform);
 
             CheckFontAsset();

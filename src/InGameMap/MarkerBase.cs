@@ -10,11 +10,10 @@ using Object = UnityEngine.Object;
 
 namespace ModPack.InGameMap
 {
+
     public abstract class MarkerBase
     {
         public GameObject UiRoot { get; protected set; }
-
-        protected static Font fontAsset;
 
         public abstract void SetPosition();
 
@@ -32,13 +31,14 @@ namespace ModPack.InGameMap
             return new(adjustedWidth, adjustedHeight);
         }
 
-        public Image InstantiateIcon(string key) => Object.Instantiate(iconTemplates[key]);
+        public Image InstantiateIcon(MarkerType key) => Object.Instantiate(iconTemplates[key]);
 
         // --------- Static ---------
 
         public const float ICON_SIZE = 30f;
 
-        internal static readonly Dictionary<string, Image> iconTemplates = new();
+        protected static Font fontAsset;
+        internal static readonly Dictionary<MarkerType, Image> iconTemplates = new();
 
         public static void InitTemplates()
         {
@@ -49,13 +49,13 @@ namespace ModPack.InGameMap
 
             var playerImage = CreateTemplate(cacheHolder, "player", 7f, 350, "ingamemap.player.png");
             playerImage.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-            iconTemplates.Add("player", playerImage);
+            iconTemplates.Add(MarkerType.Player, playerImage);
 
-            iconTemplates.Add("unknown", CreateTemplate(cacheHolder, "unknown", ICON_SIZE, 350, "ingamemap.unknown.png"));
-            iconTemplates.Add("unknown_mission", CreateTemplate(cacheHolder, "unknown_mission", ICON_SIZE, 350, "ingamemap.unknown_mission.png"));
-            iconTemplates.Add("boss", CreateTemplate(cacheHolder, "boss", ICON_SIZE, 350, "ingamemap.boss.png"));
+            iconTemplates.Add(MarkerType.Unknown, CreateTemplate(cacheHolder, "unknown", ICON_SIZE, 350, "ingamemap.unknown.png"));
+            iconTemplates.Add(MarkerType.Unknown_mission, CreateTemplate(cacheHolder, "unknown_mission", ICON_SIZE, 350, "ingamemap.unknown_mission.png"));
+            iconTemplates.Add(MarkerType.Boss, CreateTemplate(cacheHolder, "boss", ICON_SIZE, 350, "ingamemap.boss.png"));
 
-            iconTemplates.Add("heightmap", null);
+            iconTemplates.Add(MarkerType.Heightmap, null);
         }
 
         protected static void CheckFontAsset()

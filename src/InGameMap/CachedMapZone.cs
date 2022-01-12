@@ -5,16 +5,6 @@ using UnityEngine.UI;
 
 namespace ModPack.InGameMap
 {
-    public enum MapType
-    {
-        Island,
-        Start,
-        Eel,
-        Squid,
-        Shark,
-        Aircraft
-    }
-
     public class CachedMapZone : MarkerBase, IPoolable
     {
         public Map RefMap { get; private set; }
@@ -25,11 +15,11 @@ namespace ModPack.InGameMap
         bool IsMission => MapId.Contains("MISSION");
 
         private bool? discoveredState;
-        private string discoveredKey;
-        private string undiscoveredKey;
+        private MarkerType discoveredKey;
+        private MarkerType undiscoveredKey;
         private Vector2 worldPosition;
 
-        private readonly Dictionary<string, Image> icons = new();
+        private readonly Dictionary<MarkerType, Image> icons = new();
         private Text label;
 
         public void OnBorrowed(object[] data)
@@ -41,24 +31,24 @@ namespace ModPack.InGameMap
             if (RefZone.IsStartingIsland)
             {
                 Type = MapType.Start;
-                discoveredKey = "heightmap";
+                discoveredKey = MarkerType.Heightmap;
                 label.text = "Start";
                 label.color = Color.black;
             }
             else if (IsMission)
             {
                 undiscoveredKey = InGameMap.revealMissions.Value
-                    ? "unknown_mission"
-                    : "unknown";
+                    ? MarkerType.Unknown_mission
+                    : MarkerType.Unknown;
 
                 if (MapId.Contains("MISSION_3"))
                 {
                     Type = MapType.Aircraft;
-                    discoveredKey = "heightmap";
+                    discoveredKey = MarkerType.Heightmap;
                 }
                 else
                 {
-                    discoveredKey = "boss";
+                    discoveredKey = MarkerType.Boss;
 
                     if (MapId.Contains("MISSION_0"))
                         Type = MapType.Eel;
@@ -72,8 +62,8 @@ namespace ModPack.InGameMap
             {
                 Type = MapType.Island;
                 label.gameObject.SetActive(false);
-                undiscoveredKey = "unknown";
-                discoveredKey = "heightmap";
+                undiscoveredKey = MarkerType.Unknown;
+                discoveredKey = MarkerType.Heightmap;
             }
         }
 
@@ -82,8 +72,8 @@ namespace ModPack.InGameMap
             RefMap = null;
             RefZone = null;
             discoveredState = null;
-            discoveredKey = null;
-            undiscoveredKey = null;
+            discoveredKey = MarkerType.NONE;
+            undiscoveredKey = MarkerType.NONE;
 
             label.gameObject.SetActive(false);
 
@@ -102,10 +92,10 @@ namespace ModPack.InGameMap
                 return;
             discoveredState = discovered;
 
-            if (!string.IsNullOrEmpty(discoveredKey))
+            if (discoveredKey != MarkerType.NONE)
                 icons[discoveredKey].gameObject.SetActive(discovered);
 
-            if (!string.IsNullOrEmpty(undiscoveredKey))
+            if (undiscoveredKey != MarkerType.NONE)
                 icons[undiscoveredKey].gameObject.SetActive(!discovered);
 
             label.gameObject.SetActive(discovered && Type != MapType.Island);
@@ -149,7 +139,7 @@ namespace ModPack.InGameMap
 
         public void SetHeightmap(Map map)
         {
-            var texture2D = icons["heightmap"].sprite.texture;
+            Texture2D texture2D = icons[MarkerType.Heightmap].sprite.texture;
 
             for (int y = 0; y < map.HeightmapData.GetLength(0); y++)
             {
@@ -176,16 +166,16 @@ namespace ModPack.InGameMap
 
         public void InitialCreation()
         {
-            UiRoot = new GameObject("CachedEvent");
+            UiRoot = new GameObject("CachedMapZone");
             UiRoot.transform.SetParent(InGameMap.Instance.canvasRoot.transform);
 
             foreach (var entry in iconTemplates)
             {
-                if (entry.Key == "player")
+                if (entry.Key == MarkerType.Player)
                     continue;
 
                 Image icon;
-                if (entry.Key == "heightmap")
+                if (entry.Key == MarkerType.Heightmap)
                     icon = CreateHeightmap();
                 else
                     icon = InstantiateIcon(entry.Key);

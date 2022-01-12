@@ -76,21 +76,15 @@ namespace ModPack.InGameMap
             GameObject.DontDestroyOnLoad(canvasRoot);
 
             var canvas = canvasRoot.AddComponent<Canvas>();
-            canvas.renderMode = 0;
-            canvas.pixelPerfect = false;
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 12;
-            canvas.targetDisplay = 0;
 
             var canvasScaler = canvasRoot.AddComponent<CanvasScaler>();
-            canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             canvasScaler.referenceResolution = new(REFERENCE_SCREEN_WIDTH, REFERENCE_SCREEN_HEIGHT);
-            canvasScaler.matchWidthOrHeight = 0.5f;
-            canvasScaler.screenMatchMode = 0;
             canvasScaler.referencePixelsPerUnit = 100f;
-
-            var graphicRaycaster = canvasRoot.AddComponent<GraphicRaycaster>();
-            graphicRaycaster.ignoreReversedGraphics = true;
-            graphicRaycaster.blockingObjects = 0;
+            canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            canvasScaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            canvasScaler.matchWidthOrHeight = 0.5f;
 
             var background = MarkerBase.CreateTemplate(canvasRoot, "Background", MAP_IMAGE_DIMENSIONS, 2000, "ingamemap.background.png");
             background.rectTransform.anchoredPosition = Vector2.zero;
@@ -168,7 +162,6 @@ namespace ModPack.InGameMap
 
             ClearObjectPools();
 
-            // Cache Events
             for (int i = 0; i < World.MapList.Length; i++)
             {
                 var map = World.MapList[i];

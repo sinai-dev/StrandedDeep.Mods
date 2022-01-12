@@ -48,7 +48,6 @@ namespace ModPack
                         toggle.SettingChanged += plugin.Toggle_SettingChanged;
                         plugin.ToggleSetting = toggle;
 
-                        // initialize
                         plugin.Initialize();
                     }
                     catch (Exception ex)
