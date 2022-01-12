@@ -23,6 +23,8 @@ namespace ModPack.ContainerTweaks
         private static ConfigEntry<bool> AllowStoringContainers;
         private static ConfigEntry<bool> MaxContainerSizes;
 
+        private static bool _doneInitialSetup;
+
         public override void Initialize()
         {
             Instance = this;
@@ -30,23 +32,52 @@ namespace ModPack.ContainerTweaks
             AllowStoringContainers = Bind("Allow storing containers", false, "Allows containers to be placed inside other containers");
             MaxContainerSizes = Bind("Max container sizes", false, "Makes it so inventory and containers use maximum slots.", SettingChanged_MaxContainers);
 
-            BuildAllContainerOriginalValues();
-
             base.Initialize();
+        }
+
+        private static float timeOfLastSetupCheck;
+
+        public override void Update()
+        {
+            base.Update();
+
+            if (!_doneInitialSetup)
+            {
+                if (Time.realtimeSinceStartup - timeOfLastSetupCheck < 1f)
+                    return;
+                timeOfLastSetupCheck = Time.realtimeSinceStartup;
+
+                try
+                {
+                    CheckBuildAllContainerOriginalValues();
+                    
+                    if (originalContainerSizes.Any())
+                    {
+                        if (Enabled)
+                            SetAllContainers();
+
+                        _doneInitialSetup = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogWarning($"Exception setting up ContainerTweaks: {ex}");
+                }
+            }
         }
 
         public override void OnEnabled()
         {
             base.OnEnabled();
 
-            SetAllContainers(MaxContainerSizes.Value);
+            SetAllContainers();
         }
 
         public override void OnDisabled()
         {
             base.OnDisabled();
 
-            SetAllContainers(MaxContainerSizes.Value);
+            SetAllContainers();
         }
 
         #region ALLOW STORING CONTAINERS
@@ -92,13 +123,19 @@ namespace ModPack.ContainerTweaks
 
         static readonly Dictionary<string, int> originalContainerSizes = new();
 
+        const string INVENTORY_KEY = "INVENTORY_MENU_BACKPACK_TITLE";
+        const string RAFT_KEY = "RAFT"; // made up by me
+
         private void SettingChanged_MaxContainers(SettingChangedEventArgs args)
         {
-            SetAllContainers((bool)args.ChangedSetting.BoxedValue);
+            SetAllContainers();
         }
 
-        private void BuildAllContainerOriginalValues()
+        private void CheckBuildAllContainerOriginalValues()
         {
+            if (originalContainerSizes.Any())
+                return;
+
             foreach (var container in Resources.FindObjectsOfTypeAll<Interactive_STORAGE>())
             {
                 if (originalContainerSizes.ContainsKey(container.PrefabId.ToString()))
@@ -108,18 +145,24 @@ namespace ModPack.ContainerTweaks
 
             foreach (var container in Resources.FindObjectsOfTypeAll<Interactive_RAFT_STORAGE>())
             {
-                originalContainerSizes.Add("raft", container._slotStorage._slotCount);
+                originalContainerSizes.Add(RAFT_KEY, container._slotStorage._slotCount);
                 break;
+            }
+
+            if (originalContainerSizes.Any())
+            {
+                originalContainerSizes.Add(INVENTORY_KEY, 10);
+                Instance.LogWarning($"CheckBuildAllContainerOriginalValues : Setup with {originalContainerSizes.Count} entries.");
             }
         }
 
-        private void SetAllContainers(bool toMax)
+        private void SetAllContainers()
         {
             foreach (var container in Resources.FindObjectsOfTypeAll<Interactive_STORAGE>())
-                SetSlotStorage(container._slotStorage, Enabled && toMax);
+                SetSlotStorage(container._slotStorage, Enabled && MaxContainerSizes.Value);
 
             foreach (var container in Resources.FindObjectsOfTypeAll<Interactive_RAFT_STORAGE>())
-                SetSlotStorage(container._slotStorage, Enabled && toMax);
+                SetSlotStorage(container._slotStorage, Enabled && MaxContainerSizes.Value);
         }
 
         [HarmonyPatch(typeof(StorageRadialMenuPresenter), nameof(StorageRadialMenuPresenter.Show))]
@@ -137,8 +180,6 @@ namespace ModPack.ContainerTweaks
             SetSlotStorage(__instance, MaxContainerSizes.Value);
         }
 
-        const string INVENTORY_KEY = "INVENTORY_MENU_BACKPACK_TITLE";
-
         static void SetSlotStorage(SlotStorage storage, bool toMax)
         {
             string key;
@@ -147,7 +188,13 @@ namespace ModPack.ContainerTweaks
             else if (storage._storageContainer.parent.GetComponent<Interactive_STORAGE>() is Interactive_STORAGE interactiveStorage)
                 key = interactiveStorage.PrefabId.ToString();
             else
-                key = "raft";
+                key = RAFT_KEY;
+
+            if (!toMax && !originalContainerSizes.ContainsKey(key))
+            {
+                Instance.LogWarning($"Original sizes doesn't contain key: {key}");
+                return;
+            }
 
             int count = toMax ? (key == INVENTORY_KEY ? 10 : 11) : originalContainerSizes[key];
 
