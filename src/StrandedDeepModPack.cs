@@ -16,7 +16,7 @@ namespace ModPack
     {
         public const string GUID = "com.sinai.stranded-deep.modpack";
         const string NAME = "Sinai's Mod Pack";
-        const string VERSION = "1.0.1";
+        const string VERSION = "1.0.2";
 
         const string TOGGLES_CATEGORY = "All Feature Toggles";
 

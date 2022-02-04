@@ -7,6 +7,7 @@ using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,6 +23,7 @@ namespace ModPack.ContainerTweaks
 
         private static ConfigEntry<bool> AllowStoringContainers;
         private static ConfigEntry<bool> MaxContainerSizes;
+        private static ConfigEntry<bool> NormalLootQuantity;
 
         private static bool _doneInitialSetup;
 
@@ -31,6 +33,7 @@ namespace ModPack.ContainerTweaks
 
             AllowStoringContainers = Bind("Allow storing containers", false, "Allows containers to be placed inside other containers");
             MaxContainerSizes = Bind("Max container sizes", false, "Makes it so inventory and containers use maximum slots.", SettingChanged_MaxContainers);
+            NormalLootQuantity = Bind("Normal Loot Quantity", false, "Limits the amount of loot found in containers to the vanilla container size, to prevent extra loot");
 
             base.Initialize();
         }
@@ -50,7 +53,7 @@ namespace ModPack.ContainerTweaks
                 try
                 {
                     CheckBuildAllContainerOriginalValues();
-                    
+
                     if (originalContainerSizes.Any())
                     {
                         if (Enabled)
@@ -180,7 +183,7 @@ namespace ModPack.ContainerTweaks
             SetSlotStorage(__instance, MaxContainerSizes.Value);
         }
 
-        static void SetSlotStorage(SlotStorage storage, bool toMax)
+        static string GetKey(SlotStorage storage)
         {
             string key;
             if (storage.Name == INVENTORY_KEY)
@@ -189,6 +192,12 @@ namespace ModPack.ContainerTweaks
                 key = interactiveStorage.PrefabId.ToString();
             else
                 key = RAFT_KEY;
+            return key;
+        }
+
+        static void SetSlotStorage(SlotStorage storage, bool toMax)
+        {
+            string key = GetKey(storage);
 
             if (!toMax && !originalContainerSizes.ContainsKey(key))
             {
@@ -219,6 +228,31 @@ namespace ModPack.ContainerTweaks
             }
 
             storage._slotCount = count;
+        }
+
+        // Patch for original loot quantity
+
+        [HarmonyPatch(typeof(Interactive_STORAGE), nameof(Interactive_STORAGE.OnSlotStorageOpen))]
+        public class Interactive_Storage_OnSlotStorageOpen
+        {
+            static void Prefix(Interactive_STORAGE __instance, ref object[] __state)
+            {
+                if (!NormalLootQuantity.Value)
+                    return;
+
+                __state = new object[] { __instance._slotStorage.SlotCount };
+                // Set it back to the original slotCount before execution
+                __instance._slotStorage._slotCount = originalContainerSizes[GetKey(__instance._slotStorage)];
+            }
+
+            static void Postfix(Interactive_STORAGE __instance, object[] __state)
+            {
+                if (!NormalLootQuantity.Value)
+                    return;
+
+                // Set it back to the original count after execution
+                __instance._slotStorage._slotCount = (int)__state[0];
+            }
         }
 
         #endregion
